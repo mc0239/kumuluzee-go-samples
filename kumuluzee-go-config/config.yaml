@@ -3,9 +3,9 @@ kumuluzee:
   name: test-service
   server:
     # url where our service will live
-    base-url: http://localhost:3000
+    base-url: http://localhost:9000
     http:
-      port: 3000
+      port: 9000
   env: 
     name: dev
   config:

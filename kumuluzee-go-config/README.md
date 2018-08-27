@@ -59,7 +59,7 @@ To shut down the example simply stop the processes in the foreground.
 
 This tutorial will guide you through the steps required to read local and remote configuration.
 
-We will develop a simple web application which will read configuration and return it in json format.
+We will develop a simple http server which will read configuration and return it in json format.
 
 ### Create a Go project
 
@@ -84,18 +84,17 @@ First, in project root folder, we are going to create file called **config.yaml*
 kumuluzee:
   # name of our service
   name: test-service
-  version: 1.0.0
   server:
     # url where our service will live
-    base-url: http://localhost:3000
+    base-url: http://localhost:9000
     http:
-      port: 3000
+      port: 9000
   env: 
     name: dev
   config:
-    etcd:
+    consul:
       # url of our etcd server we setup before
-      hosts: http://localhost:2379
+      hosts: http://localhost:8500
 # our custom configuration
 rest-config:
   string-property: Monday
