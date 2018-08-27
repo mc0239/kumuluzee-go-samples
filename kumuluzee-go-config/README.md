@@ -59,7 +59,7 @@ To shut down the example simply stop the processes in the foreground.
 
 This tutorial will guide you through the steps required to read local and remote configuration.
 
-We will develop a simple application which will read configuration and return it in json format.
+We will develop a simple web application which will read configuration and return it in json format.
 
 ### Create a Go project
 
