@@ -35,7 +35,7 @@ It is also recommended that you are familiar with Go programming language and it
 
 You can download these samples by running:
 ```bash
-go get github.com/mc0239/kumulzee-go-samples
+go get github.com/mc0239/kumuluzee-go-samples/...
 ```
 
 This will download samples and all of it's dependencies. Samples will be availiable in Go's workspace, under `$GOPATH/src/github.com/mc0239/kumuluzee-go-samples`
@@ -71,7 +71,7 @@ This created project folder will serve as a root folder of our project.
 
 If not already, we can `go get` the *kumuluzee-go-config* package:
 ```bash
-$ go get github.com/mc0239/kumuluzee-go-config
+$ go get github.com/mc0239/kumuluzee-go-config/config
 ```
 
 Note that when calling the `go get` command, we should be located inside the Go's workspace.
