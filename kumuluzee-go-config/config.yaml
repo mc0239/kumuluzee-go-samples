@@ -10,7 +10,7 @@ kumuluzee:
     name: dev
   config:
     consul:
-      # url of our etcd server we setup before
+      # url of our consul server we setup before
       hosts: http://localhost:8500
 # our custom configuration
 rest-config:
