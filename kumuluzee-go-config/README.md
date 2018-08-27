@@ -40,7 +40,7 @@ go get github.com/mc0239/kumulzee-go-samples
 
 This will download samples and all of it's dependencies. Samples will be availiable in Go's workspace, under `$GOPATH/src/github.com/mc0239/kumuluzee-go-samples`
 
-Position in the project directory, you can run sample:
+Positioned in `kumuluzee-go-samples/kumuluzee-go-config` directory, you can run sample:
   * using Configuration Util:
   ```bash
     go run util/main.go
@@ -61,13 +61,7 @@ This tutorial will guide you through the steps required to read local and remote
 
 We will develop a simple application which will read configuration and return it in json format.
 
-We will follow this steps:
-* Create Go project
-* Install required dependencies
-* Initialize configuration
-* Run it
-
-### Create Go project
+### Create a Go project
 
 Assuming working Go installation, We can create a new Go project in Go's workspace by creating a new folder in `$GOPATH/src`, for example: `$GOPATH/src/my-project`
 
