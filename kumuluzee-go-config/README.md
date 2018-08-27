@@ -38,9 +38,9 @@ You can download these samples by running:
 go get github.com/mc0239/kumuluzee-go-samples/...
 ```
 
-This will download samples and all of it's dependencies. Samples will be availiable in Go's workspace, under `$GOPATH/src/github.com/mc0239/kumuluzee-go-samples`
+This will download samples and all their dependencies. Samples will be availiable in Go's workspace, under `$GOPATH/src/github.com/mc0239/kumuluzee-go-samples`
 
-Positioned in `kumuluzee-go-samples/kumuluzee-go-config` directory, you can run sample:
+Positioned in `.../kumuluzee-go-samples/kumuluzee-go-config` directory, you can run sample:
   * using Configuration Util:
   ```bash
     go run util/main.go
