@@ -132,8 +132,7 @@ func main() {
 }
 ```
 
-Now that we have a running server, we can implement configuration lookup:
-
+Now that we have a running server, we can implement configuration lookup.
 First we need to initialize our configuration source:
 ```go
 // add to imports
