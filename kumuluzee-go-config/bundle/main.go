@@ -26,7 +26,7 @@ func main() {
 	prefixKey := "rest-config"
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "{value: %s, subvalue: %s}", conf.StringProperty, conf.ObjectProperty.SubProperty)
+		fmt.Fprintf(w, "{ \"value\": \"%s\", \"subvalue\": \"%s\"}", conf.StringProperty, conf.ObjectProperty.SubProperty)
 	})
 
 	configPath := path.Join(".", "config.yaml")

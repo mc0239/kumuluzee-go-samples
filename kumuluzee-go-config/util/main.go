@@ -16,7 +16,7 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		stringProp, ok := conf.GetString("rest-config.string-property")
 		if ok {
-			fmt.Fprintf(w, "{value: %s}", stringProp)
+			fmt.Fprintf(w, "{ \"value\": \"%s\" }", stringProp)
 		} else {
 			w.WriteHeader(500)
 		}

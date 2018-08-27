@@ -154,7 +154,7 @@ Now we can update our **GET /** function to perform lookup of configuration:
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     stringProp, ok := conf.GetString("rest-config.string-property")
     if ok {
-       fmt.Fprintf(w, "{value: %s}", stringProp)
+       fmt.Fprintf(w, "{ \"value\": \"%s\" }", stringProp)
     } else {
         w.WriteHeader(500)
     }
@@ -164,7 +164,7 @@ http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 Response should be:
 ```json
 {
-    value: Monday
+    "value": "Monday"
 }
 ```
 
@@ -229,14 +229,14 @@ config.NewBundle(prefixKey, &conf, config.Options{
 And now we edit our **GET /** function to perform lookup:
 ```go
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "{value: %s, subvalue: %s}", conf.StringProperty, conf.ObjectProperty.SubProperty)
+    fmt.Fprintf(w, "{ \"value\": \"%s\", \"subvalue\": \"%s\"}", conf.StringProperty, conf.ObjectProperty.SubProperty)
 })
 ```
 
 Response should be:
 ```json
 {
-    value: Monday, 
-    subvalue: Object property value
+    "value": "Monday", 
+    "subvalue": "Object property value"
 }
 ```  
