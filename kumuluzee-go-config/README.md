@@ -69,7 +69,7 @@ This created project folder will serve as a root folder of our project.
 
 ### Install required dependencies
 
-If not already, we can `go get` the *kumuluzee-go-config* package:
+If not already, we can `go get` the *kumuluzee-go-config/config* package:
 ```bash
 $ go get github.com/mc0239/kumuluzee-go-config/config
 ```
@@ -154,18 +154,31 @@ Now we can update our **GET /** function to perform lookup of configuration:
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
     stringProp, ok := conf.GetString("rest-config.string-property")
     if ok {
-       fmt.Fprintf(w, "{ \"value\": \"%s\" }", stringProp)
+        // prepare a struct for marshalling into json
+        data := struct {
+            Value string `json:"value"`
+        }{
+            stringProp,
+        }
+
+        // generate json from data
+        genjson, err := json.Marshal(data)
+        if err != nil {
+            w.WriteHeader(500)
+        } else {
+            // write generated json to ResponseWriter
+            fmt.Fprint(w, string(genjson))
+        }
     } else {
         w.WriteHeader(500)
     }
+
 })
 ```
 
 Response should be:
 ```json
-{
-    "value": "Monday"
-}
+{"value":"Monday"}
 ```
 
 #### Using config bundle
@@ -199,11 +212,11 @@ Now that we have a running server, we can implement configuration lookup.
 Define a new struct reflecting how our config looks like:
 ```go
 type myConfig struct {
-	StringProperty  string `config:"string-property"`
+	StringProperty  string `config:"string-property,watch"`
 	IntegerProperty int    `config:"integer-property"`
 	BooleanProperty bool   `config:"boolean-property"`
 	ObjectProperty  struct {
-		SubProperty  string `config:"sub-property"`
+		SubProperty  string `config:"sub-property,watch"`
 		SubProperty2 string `config:"sub-property-2"`
 	} `config:"object-property"`
 }
@@ -229,14 +242,28 @@ config.NewBundle(prefixKey, &conf, config.Options{
 And now we edit our **GET /** function to perform lookup:
 ```go
 http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "{ \"value\": \"%s\", \"subvalue\": \"%s\"}", conf.StringProperty, conf.ObjectProperty.SubProperty)
+    // prepare a struct for marshalling into json
+    data := struct {
+        Value    string `json:"value"`
+        Subvalue string `json:"subvalue"`
+    }{
+        conf.StringProperty,
+        conf.ObjectProperty.SubProperty,
+    }
+
+    // generate json from data
+    genjson, err := json.Marshal(data)
+    if err != nil {
+        w.WriteHeader(500)
+    } else {
+        // write generated json to ResponseWriter
+        fmt.Fprint(w, string(genjson))
+    }
+
 })
 ```
 
 Response should be:
 ```json
-{
-    "value": "Monday", 
-    "subvalue": "Object property value"
-}
+{"value":"Monday","subvalue":"Object property value"}
 ```  

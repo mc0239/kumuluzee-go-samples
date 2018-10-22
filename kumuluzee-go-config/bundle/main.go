@@ -13,8 +13,8 @@ import (
 
 type myConfig struct {
 	StringProperty  string `config:"string-property,watch"`
-	IntegerProperty int    `config:"integer-property,watch"`
-	BooleanProperty bool   `config:"boolean-property,watch"`
+	IntegerProperty int    `config:"integer-property"`
+	BooleanProperty bool   `config:"boolean-property"`
 	ObjectProperty  struct {
 		SubProperty  string `config:"sub-property,watch"`
 		SubProperty2 string `config:"sub-property-2"`
@@ -28,6 +28,7 @@ func main() {
 	prefixKey := "rest-config"
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// prepare a struct for marshalling into json
 		data := struct {
 			Value    string `json:"value"`
 			Subvalue string `json:"subvalue"`
@@ -36,10 +37,12 @@ func main() {
 			conf.ObjectProperty.SubProperty,
 		}
 
+		// generate json from data
 		genjson, err := json.Marshal(data)
 		if err != nil {
 			w.WriteHeader(500)
 		} else {
+			// write generated json to ResponseWriter
 			fmt.Fprint(w, string(genjson))
 		}
 
@@ -47,6 +50,7 @@ func main() {
 
 	configPath := path.Join(".", "config.yaml")
 
+	// initialize configuration bundle
 	opts := config.Options{
 		Extension:  "consul",
 		ConfigPath: configPath,
@@ -54,14 +58,15 @@ func main() {
 
 	config.NewBundle(prefixKey, &conf, opts)
 
+	// get port number from configuration aswell
 	util := config.NewUtil(opts)
-
 	port, ok := util.GetInt("kumuluzee.server.http.port")
 	if !ok {
-		log.Printf("There was an error reading port from configuration")
+		log.Printf("Error reading port from configuration")
 		port = 9000
 	}
 
+	// run server
 	log.Printf("Starting server on port %d", port)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 
