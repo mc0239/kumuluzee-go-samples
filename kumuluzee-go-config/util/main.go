@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"path"
+	"strconv"
 
 	"github.com/mc0239/kumuluzee-go-config/config"
 )
@@ -16,10 +18,22 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		stringProp, ok := conf.GetString("rest-config.string-property")
 		if ok {
-			fmt.Fprintf(w, "{ \"value\": \"%s\" }", stringProp)
+			data := struct {
+				Value string `json:"value"`
+			}{
+				stringProp,
+			}
+
+			genjson, err := json.Marshal(data)
+			if err != nil {
+				w.WriteHeader(500)
+			}
+
+			fmt.Fprint(w, string(genjson))
 		} else {
 			w.WriteHeader(500)
 		}
+
 	})
 
 	configPath := path.Join(".", "config.yaml")
@@ -29,6 +43,13 @@ func main() {
 		ConfigPath: configPath,
 	})
 
-	log.Fatal(http.ListenAndServe(":9000", nil))
+	port, ok := conf.GetInt("kumuluzee.server.http.port")
+	if !ok {
+		log.Printf("There was an error reading port from configuration")
+		port = 9000
+	}
+
+	log.Printf("Starting server on port %d", port)
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
 
 }

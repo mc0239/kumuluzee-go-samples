@@ -9,6 +9,7 @@ kumuluzee:
   env: 
     name: dev
   config:
+    start-retry-delay-ms: 1000
     consul:
       # url of our etcd server we setup before
       hosts: http://localhost:8500
