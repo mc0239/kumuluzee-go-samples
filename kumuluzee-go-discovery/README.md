@@ -64,14 +64,14 @@ This created project folder will serve as a root folder of our project.
 
 ### Install required dependencies
 
-If not already, we can `go get` the *kumuluzee-go-discovery* package:
+If not already, we can `go get` the *kumuluzee-go-discovery/discovery* package:
 ```bash
 $ go get github.com/mc0239/kumuluzee-go-discovery/discovery
 ```
 
 Note that when calling the `go get` command, we should be located inside the Go's workspace.
 
-**kumuluzee-go-discovery depends on kumuluzee-go-config, therefore when we go get discovery package, config package is downloaded as well.**
+**kumuluzee-go-discovery depends on kumuluzee-go-config, therefore when we `go get` discovery package, config package is downloaded as well.**
 
 ### Initializing discovery util
 
@@ -134,16 +134,32 @@ func main() {
 Now we will create simple http server, which will lookup url of our service and send it to client:
 ```go
 http.HandleFunc("/lookup", func(w http.ResponseWriter, r *http.Request) {
+    // define parameters of the service we are looking for
+    // and call DiscoverService
     service, err := disc.DiscoverService(discovery.DiscoverOptions{
         Value:       "test-service",
         Version:     "1.0.0",
         Environment: "dev",
+        AccessType:  "direct",
     })
     if err != nil {
         w.WriteHeader(500)
-        fmt.Fprint(w, err.Error())
     } else {
-        fmt.Fprintf(w, "{ \"service\": \"%s:%d\" }", service.Address, service.Port)
+        // prepare a struct for marshalling into json
+        data := struct {
+            Service string `json:"service"`
+        }{
+            fmt.Sprintf("%s:%s", service.Address, service.Port),
+        }
+
+        // generate json from data
+        genjson, err := json.Marshal(data)
+        if err != nil {
+            w.WriteHeader(500)
+        } else {
+            // write generated json to ResponseWriter
+            fmt.Fprint(w, string(genjson))
+        }
     }
 })
 
@@ -152,7 +168,5 @@ log.Fatal(http.ListenAndServe(":9000", nil))
 
 Upon visiting http://localhost:9000/lookup , the response should be:
 ```json
-{
-  "service": "http://127.0.0.1:9000/"
-}
+{"service":"127.0.0.1:9000"}
 ```
