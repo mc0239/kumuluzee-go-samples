@@ -25,7 +25,7 @@ public class CustomerResource {
 	private OrdersBean ordersBean;
 	
 	@Inject
-	@DiscoverService(value = "node-service", version = "1.0.0", environment = "dev")
+	@DiscoverService(value = "go-service", version = "1.0.0", environment = "dev")
 	private Optional<WebTarget> serviceUrl;
 	
 	// get customer for given order id
