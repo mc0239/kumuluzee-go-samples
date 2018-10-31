@@ -22,8 +22,8 @@ The following samples are available (list might not be up-to-date; please refer 
 
 Go samples:
 - KumuluzEE Config
-- <s>KumuluzEE Discovery</s>
-- <s>Tutorial with Node.js and Java services</s>
+- KumuluzEE Discovery
+- Tutorial with Go and Java services
 
 ## Requirements
 
@@ -48,27 +48,26 @@ In order to run these examples as they are intended, you will need the following
     git clone git@https://github.com/mc0239/kumuluzee-go-samples.git
     ```
     
-2. <s>Checkout the desired tagged version of the examples and the KumuluzEE framework (alternatively skip this step if you want the latest and greatest)
+2. Checkout the desired tagged version of the examples and the KumuluzEE framework (alternatively skip this step if you want the latest and greatest)
 
     ```
-    cd kumuluzee-nodejs-samples
+    cd kumuluzee-go-samples
     git checkout v2.4.0
     ```
-    </s>
 
 To run a specific sample, please refer to the specific README file of the sample.
-Most of the time you either run it directly with a NPM command or build Docker containers and run them.
+Most of the time you either run it directly with go toolchain or build Docker containers and run them.
 
 ## Changelog
 
-Recent changes can be viewed on Github on the [Releases Page](https://github.com/kumuluz/kumuluzee-nodejs-samples/releases)
+Recent changes can be viewed on Github on the [Releases Page](https://github.com/mc0239/kumuluzee-go-samples/releases)
 
 ## Contribute
 
-<s>See the [contributing docs](https://github.com/kumuluz/kumuluzee-nodejs-samples/blob/master/CONTRIBUTING.md)
+See the [contributing docs](https://github.com/mc0239/kumuluzee-go-samples/blob/master/CONTRIBUTING.md)
 
-When submitting an issue, please follow the [guidelines](https://github.com/kumuluz/kumuluzee-nodejs-samples/blob/master/CONTRIBUTING.md#bugs).
-</s>
+When submitting an issue, please follow the [guidelines](https://github.com/mc0239/kumuluzee-go-samples/blob/master/CONTRIBUTING.md#bugs).
+
 Issues related to KumuluzEE itself should be submitted at Issues page of appropriate library.
 
 ## License

@@ -9,8 +9,8 @@ Our Java microservice will use following KumuluzEE extensions:
 - KumuluzEE Discovery for service registration and service discovery
 
 Our Go microservice will use following KumuluzEE packages:
-- github.com/mc0239/kumuluzee-go-config/config for dynamic reconfiguration of microservices with the use of configuration servers,
-- github.com/mc0239/kumuluzee-go-discovery/discovery for service registration and service discovery
+- `github.com/mc0239/kumuluzee-go-config/config` for dynamic reconfiguration of microservices with the use of configuration servers,
+- `github.com/mc0239/kumuluzee-go-discovery/discovery` for service registration and service discovery
 
 Both microservices will use Consul to store configuration and register services. With minor tweaks the tutorial will work with Etcd server as well.
 
@@ -540,9 +540,9 @@ kumuluzee:
   name: go-service
   server:
     # url where our service will live
-    base-url: http://localhost:3000
+    base-url: http://localhost:9000
     http:
-      port: 3000
+      port: 9000
   env:
     name: dev
   # specify hosts for discovery server
