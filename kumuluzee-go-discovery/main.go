@@ -33,20 +33,16 @@ func main() {
 	http.HandleFunc("/lookup", func(w http.ResponseWriter, r *http.Request) {
 		// define parameters of the service we are looking for
 		// and call DiscoverService
-		service, err := disc.DiscoverService(discovery.DiscoverOptions{
-			Value:       "test-service",
-			Version:     "1.0.0",
-			Environment: "dev",
-			AccessType:  "direct",
-		})
+		serviceURL, err := disc.DiscoverService(discovery.DiscoverOptions{})
 		if err != nil {
 			w.WriteHeader(500)
+			fmt.Fprint(w, err.Error())
 		} else {
 			// prepare a struct for marshalling into json
 			data := struct {
 				Service string `json:"service"`
 			}{
-				fmt.Sprintf("%s:%s", service.Address, service.Port),
+				serviceURL,
 			}
 
 			// generate json from data

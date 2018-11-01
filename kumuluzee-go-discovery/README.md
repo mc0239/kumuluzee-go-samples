@@ -144,12 +144,13 @@ http.HandleFunc("/lookup", func(w http.ResponseWriter, r *http.Request) {
     })
     if err != nil {
         w.WriteHeader(500)
+        fmt.Fprint(w, err.Error())
     } else {
         // prepare a struct for marshalling into json
         data := struct {
             Service string `json:"service"`
         }{
-            fmt.Sprintf("%s:%s", service.Address, service.Port),
+            serviceURL,
         }
 
         // generate json from data
