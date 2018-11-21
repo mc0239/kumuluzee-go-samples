@@ -33,7 +33,12 @@ func main() {
 	http.HandleFunc("/lookup", func(w http.ResponseWriter, r *http.Request) {
 		// define parameters of the service we are looking for
 		// and call DiscoverService
-		serviceURL, err := disc.DiscoverService(discovery.DiscoverOptions{})
+		serviceURL, err := disc.DiscoverService(discovery.DiscoverOptions{
+			Value:       "test-service",
+			Version:     "1.0.0",
+			Environment: "dev",
+			AccessType:  "direct",
+		})
 		if err != nil {
 			w.WriteHeader(500)
 			fmt.Fprint(w, err.Error())
