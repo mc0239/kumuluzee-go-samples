@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"path"
 	"strconv"
+	"syscall"
 
 	"github.com/mc0239/kumuluzee-go-config/config"
 	"github.com/mc0239/kumuluzee-go-discovery/discovery"
@@ -67,6 +70,9 @@ func main() {
 		ConfigPath: configPath,
 	})
 
+	// perform service deregistration on received interrupt or terminate signals
+	deregisterOnSignal()
+
 	// get port number from configuration
 	port, ok := conf.GetInt("kumuluzee.server.http.port")
 	if !ok {
@@ -77,5 +83,21 @@ func main() {
 	// run server
 	log.Printf("Starting server on port %d", port)
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(port), nil))
+}
 
+func deregisterOnSignal() {
+	// catch interrupt or terminate signals and send them to sigs channel
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// function waits for received signal - and then performs service deregistration
+	go func() {
+		<-sigs
+		if err := disc.DeregisterService(); err != nil {
+			panic(err)
+		}
+		// besides deregistration, you could also do any other clean-up here.
+		// Make sure to call os.Exit() with status number at the end.
+		os.Exit(1)
+	}()
 }

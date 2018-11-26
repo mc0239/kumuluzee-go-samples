@@ -102,11 +102,17 @@ Now, we need to initialize our discovery util and register our service:
 ```go
 // imports
 import (
+    "encoding/json"
     "fmt"
     "log"
     "net/http"
+    "os"
+    "os/signal"
     "path"
+    "strconv"
+    "syscall"
 
+    "github.com/mc0239/kumuluzee-go-config/config"
     "github.com/mc0239/kumuluzee-go-discovery/discovery"
 )
 
@@ -127,7 +133,31 @@ func main() {
         panic(err)
     }
 
+    // perform service deregistration on received interrupt or terminate signals
+    deregisterOnSignal()
+
     // here we also add http server, see below
+}
+```
+
+Note that we also have to make sure to **deregister** service once it stops working. With Go, we can use `os/signal` standard package to handle received signals (i.e. interrupt and terminate signals):
+
+```go
+func deregisterOnSignal() {
+    // catch interrupt or terminate signals and send them to sigs channel
+    sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+    // function waits for received signal - and then performs service deregistration
+    go func() {
+        <-sigs
+        if err := disc.DeregisterService(); err != nil {
+            panic(err)
+        }
+        // besides deregistration, you could also do any other clean-up here.
+        // Make sure to call os.Exit() with status number at the end.
+        os.Exit(1)
+    }()
 }
 ```
 
