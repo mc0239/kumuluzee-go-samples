@@ -64,7 +64,7 @@ func createOrder(c *gin.Context) {
 	}
 
 	// discover Java service to post order to
-	service, err := disc.DiscoverService(discovery.DiscoverOptions{
+	ordAddress, err := disc.DiscoverService(discovery.DiscoverOptions{
 		Value:       "java-service",
 		Environment: "dev",
 		Version:     "1.0.0",
@@ -81,8 +81,6 @@ func createOrder(c *gin.Context) {
 
 	// pointer to OrderResponse, where request's response will be stored
 	ordResp := &OrderResponse{}
-	// build api url
-	ordAddress := fmt.Sprintf("http://%s:%s/v1/orders", service.Address, service.Port)
 
 	// perform POST request
 	_, err = sling.New().Post(ordAddress).BodyJSON(ord).ReceiveSuccess(ordResp)
