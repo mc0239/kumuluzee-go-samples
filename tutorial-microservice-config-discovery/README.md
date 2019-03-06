@@ -417,7 +417,7 @@ public class OrderResource {
 
 ## Create Go project
 
-Now we will create our Go service. It will be built using [Gin web framework](github.com/gin-gonic/gin) and [Sling HTTP client library](github.com/dghubble/sling). 
+Now we will create our Go service. It will be built using [Gin web framework](http://github.com/gin-gonic/gin) and [Sling HTTP client library](http://github.com/dghubble/sling). 
 
 If you have your own preferred packages for web framework and HTTP client, you can of course use them.
 
