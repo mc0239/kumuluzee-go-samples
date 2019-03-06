@@ -26,6 +26,7 @@
         <kumuluzee-cors.version>1.0.5</kumuluzee-cors.version>
         <kumuluzee-config-consul.version>1.1.0</kumuluzee-config-consul.version>
         <kumuluzee-discovery-consul.version>1.1.0</kumuluzee-discovery-consul.version>
+        <kumuluzee-rest.version>1.2.3</kumuluzee-rest.version>
     </properties>
 
     <dependencyManagement>
@@ -52,6 +53,11 @@
                 <groupId>com.kumuluz.ee.discovery</groupId>
                 <artifactId>kumuluzee-discovery-consul</artifactId>
                 <version>${kumuluzee-discovery-consul.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.kumuluz.ee.rest</groupId>
+                <artifactId>kumuluzee-rest-core</artifactId>
+                <version>${kumuluzee-rest.version}</version>
             </dependency>
             <!-- external -->
             <dependency>

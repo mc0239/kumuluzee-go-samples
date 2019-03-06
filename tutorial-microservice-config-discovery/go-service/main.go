@@ -70,8 +70,12 @@ func main() {
 		v1c.GET("/", getCustomers)
 		// GET /v1/customers/:id
 		v1c.GET("/:id", getCustomerByID)
-		// GET /v1/customers/:id/order/
-		v1c.GET("/:id/order", createOrder)
+		// GET /v1/customers/:id/orders/
+		v1c.GET("/:id/orders", getOrdersByCustomerID)
+		// POST /v1/customers/
+		v1c.POST("/", createCustomer)
+		// GET /v1/customers/:id/neworder
+		v1c.GET("/:id/neworder", createOrder)
 	}
 
 	// run REST API server

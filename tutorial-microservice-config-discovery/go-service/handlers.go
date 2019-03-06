@@ -64,7 +64,66 @@ func getCustomerByID(c *gin.Context) {
 	return
 }
 
-// this endpoint generates new Order Request and calls our Java service to create it
+// this endpoint calls our Java service to reterieve all orders for a given customer ID
+func getOrdersByCustomerID(c *gin.Context) {
+
+	// discover Java service...
+	ordAddress, err := disc.DiscoverService(discovery.DiscoverOptions{
+		Value:       "java-service",
+		Environment: "dev",
+		Version:     "1.0.0",
+		AccessType:  "direct",
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Status:  http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	cID := c.Param("id")
+	orders := new([]OrderResponse)
+
+	_, err = sling.New().Get(ordAddress).Path("/v1/orders?where=customerId:EQ:" + cID).ReceiveSuccess(orders)
+	if err != nil {
+		// Java service returned something other than code 2xx
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Status:  http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, orders)
+	return
+}
+
+// creates a new customer from POST body
+func createCustomer(c *gin.Context) {
+	var customer Customer
+
+	err := c.ShouldBindJSON(&customer)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			http.StatusBadRequest,
+			fmt.Sprintf("Could not create customer from JSON."),
+		})
+	}
+
+	// give it an ID
+	customer.ID = mockDB[len(mockDB)-1].ID + 1
+
+	// add it to "database"
+	mockDB = append(mockDB, customer)
+
+	c.JSON(http.StatusCreated, customer)
+	return
+}
+
+// this endpoint is an example of POSTing json data to our Java service
+// it generates new Order Request and calls our Java service to create it
 // Returns order with 201 CREATED code if successful.
 func createOrder(c *gin.Context) {
 	// prepare a new order
@@ -104,7 +163,8 @@ func createOrder(c *gin.Context) {
 	ordResp := &OrderResponse{}
 
 	// perform POST request
-	_, err = sling.New().Post(ordAddress).BodyJSON(ord).ReceiveSuccess(ordResp)
+	fmt.Println(ordAddress)
+	_, err = sling.New().Post(ordAddress).Path("/v1/orders").BodyJSON(ord).ReceiveSuccess(ordResp)
 	if err != nil {
 		// Java service returned something other than code 2xx
 		c.JSON(http.StatusInternalServerError, ErrorResponse{

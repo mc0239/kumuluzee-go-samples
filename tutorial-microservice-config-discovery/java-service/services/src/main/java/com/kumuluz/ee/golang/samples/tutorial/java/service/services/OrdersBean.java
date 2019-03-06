@@ -23,11 +23,12 @@ package com.kumuluz.ee.golang.samples.tutorial.java.service.services;
 
 import com.kumuluz.ee.golang.samples.tutorial.java.service.persistence.exceptions.JavaServiceException;
 import com.kumuluz.ee.golang.samples.tutorial.java.service.persistence.models.Order;
+import com.kumuluz.ee.rest.beans.QueryParameters;
+import com.kumuluz.ee.rest.utils.JPAUtils;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.util.List;
 
@@ -36,11 +37,10 @@ public class OrdersBean {
 	
 	@PersistenceContext(unitName = "db-jpa-unit")
 	private EntityManager entityManager;
-	
-	public List<Order> getAllOrdersFromCustomer(long customerId) {
-		Query query = entityManager.createNamedQuery("Order.findAllByCustomer");
-		query.setParameter("customer_id", customerId);
-		return query.getResultList();
+
+	public List<Order> getOrders(QueryParameters query) {
+		List<Order> orders = JPAUtils.queryEntities(entityManager, Order.class, query);
+		return orders;
 	}
 	
 	public Order getOrderById(long orderId) {

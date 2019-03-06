@@ -21,16 +21,24 @@
 
 package com.kumuluz.ee.golang.samples.tutorial.java.service.api.v1.rest;
 
+import com.kumuluz.ee.discovery.annotations.DiscoverService;
+import com.kumuluz.ee.golang.samples.tutorial.java.service.persistence.exceptions.JavaServiceException;
 import com.kumuluz.ee.golang.samples.tutorial.java.service.persistence.models.Order;
 import com.kumuluz.ee.golang.samples.tutorial.java.service.persistence.requests.OrderRequest;
+import com.kumuluz.ee.golang.samples.tutorial.java.service.persistence.responses.CustomerResponse;
 import com.kumuluz.ee.golang.samples.tutorial.java.service.services.OrdersBean;
+import com.kumuluz.ee.rest.beans.QueryParameters;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.*;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 @Path("orders")
@@ -40,13 +48,51 @@ public class OrderResource {
 	
 	@Inject
 	private OrdersBean ordersBean;
-	
-	// get all orders from customer with given id
+
+	@Context
+	protected UriInfo uriInfo;
+
+	@Inject
+	@DiscoverService(value = "go-service", version = "1.0.0", environment = "dev")
+	private Optional<WebTarget> serviceUrl;
+
+	// get orders by query
 	@GET
-	@Path("customer/{customerId}")
-	public Response getOrdersFromCustomer(@PathParam("customerId") long customerId) {
-		List<Order> orders = ordersBean.getAllOrdersFromCustomer(customerId);
+	public Response getOrders() {
+		QueryParameters query = QueryParameters.query(uriInfo.getRequestUri().getQuery()).build();
+		List<Order> orders = ordersBean.getOrders(query);
 		return Response.status(Response.Status.OK).entity(orders).build();
+	}
+
+	// get order for given id
+	@GET
+	@Path("{orderId}")
+	public Response getOrder(@PathParam("orderId") long orderId) {
+		Order order = ordersBean.getOrderById(orderId);
+		return Response.status(Response.Status.OK).entity(order).build();
+	}
+
+	// get customer for given order id
+	@GET
+	@Path("{orderId}/customer")
+	public Response getCustomerFromOrder(@PathParam("orderId") long orderId) {
+		Order order = ordersBean.getOrderById(orderId);
+
+		if (!serviceUrl.isPresent()) {
+			throw new JavaServiceException("Service URL not found!", 404);
+		}
+
+		WebTarget apiUrl = serviceUrl.get().path("v1/customers/" + order.getCustomerId());
+
+		Response response = apiUrl.request().get();
+
+		if (response.getStatus() == 200) {
+			CustomerResponse customerResponse = response.readEntity(CustomerResponse.class);
+			return Response.status(Response.Status.OK).entity(customerResponse).build();
+		} else {
+			throw new JavaServiceException("Service returned error status code: " + response.getStatus(), 500);
+		}
+
 	}
 	
 	// create new order
