@@ -276,3 +276,29 @@ Response should now be:
 ```json
 {"value":"Wednesday","subvalue":"Object property value"}
 ```
+
+### Switching configuration extension
+
+In the sample above, we used consul as configuration extension. If we want to use etcd instead of Consul, we need to update two things in this sample:
+
+1. In the *config.yaml* file, replace `kumuluzee.config.consul` key with `kumuluzee.config.etcd` key:
+
+```yaml
+kumuluzee:
+  # other keys ...
+  config:
+    # here, set etcd.hosts key instead of consul.hosts
+    etcd:
+      hosts: http://localhost:2379
+```
+
+2. When initializing `config.Options` struct, set extension to "etcd" instead of "consul":
+
+```go
+opts := config.Options{
+    Extension:  "etcd",
+    ConfigPath: configPath,
+}
+```
+
+The sample should now work with etcd as it did with consul.
