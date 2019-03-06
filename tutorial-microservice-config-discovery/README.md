@@ -56,11 +56,12 @@ We will create multi-module Maven project called java-service with following str
     <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <kumuluzee.version>3.0.0</kumuluzee.version>
+    <kumuluzee.version>3.2.0</kumuluzee.version>
     <postgres.version>42.2.5</postgres.version>
-    <kumuluzee-cors.version>1.0.3</kumuluzee-cors.version>
+    <kumuluzee-cors.version>1.0.5</kumuluzee-cors.version>
     <kumuluzee-config-consul.version>1.1.0</kumuluzee-config-consul.version>
     <kumuluzee-discovery-consul.version>1.1.0</kumuluzee-discovery-consul.version>
+    <kumuluzee-rest.version>1.2.3</kumuluzee-rest.version>
 </properties>
 
 <dependencyManagement>
@@ -88,6 +89,11 @@ We will create multi-module Maven project called java-service with following str
             <artifactId>kumuluzee-discovery-consul</artifactId>
             <version>${kumuluzee-discovery-consul.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.kumuluz.ee.rest</groupId>
+            <artifactId>kumuluzee-rest-core</artifactId>
+            <version>${kumuluzee-rest.version}</version>
+        </dependency>
         <!-- external -->
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -108,6 +114,10 @@ This module will store our data object and our persisted entities
     <dependency>
         <groupId>com.kumuluz.ee</groupId>
         <artifactId>kumuluzee-jpa-eclipselink</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.kumuluz.ee.rest</groupId>
+        <artifactId>kumuluzee-rest-core</artifactId>
     </dependency>
     <dependency>
         <groupId>org.postgresql</groupId>
@@ -142,7 +152,6 @@ public class Order {
     private long customerId;
 
     // getters and setters ...
-    
 }
 ```
 
@@ -157,7 +166,7 @@ public class OrderRequest {
     private String title;
     private String description;
 
-    // getters and setters ....
+    // getters and setters ...
 }
 ```
 
@@ -173,9 +182,8 @@ public class CustomerResponse {
     private String lastName;
     private String email;
     private String phone;
-
-    // getters and setters ....
     
+    // getters and setters ...
 }
 ```
 
@@ -197,6 +205,7 @@ This module provides beans that work with entity manager.
     <dependency>
         <groupId>com.kumuluz.ee.golang.samples.tutorial.java.service</groupId>
         <artifactId>persistence</artifactId>
+        <version>${parent.version}</version>
     </dependency>
 </dependencies>
 ```
@@ -211,11 +220,10 @@ public class OrdersBean {
     
     @PersistenceContext(unitName = "db-jpa-unit")
     private EntityManager entityManager;
-    
-    public List<Order> getAllOrdersFromCustomer(long customerId) {
-        Query query = entityManager.createNamedQuery("Order.findAllByCustomer");
-        query.setParameter("customer_id", customerId);
-        return query.getResultList();
+
+    public List<Order> getOrders(QueryParameters query) {
+        List<Order> orders = JPAUtils.queryEntities(entityManager, Order.class, query);
+        return orders;
     }
     
     public Order getOrderById(long orderId) {
@@ -250,6 +258,7 @@ Api module is used to expose our application through REST Api and also to regist
     <dependency>
         <groupId>com.kumuluz.ee.golang.samples.tutorial.java.service</groupId>
         <artifactId>services</artifactId>
+        <version>${parent.version}</version>
     </dependency>
     <dependency>
         <groupId>com.kumuluz.ee</groupId>
@@ -329,7 +338,11 @@ public class OrderApplication extends Application {}
 
 #### OrderResource
 
-OrderResource.java exposes two endpoints. First one returns all orders from a given customer. Second endpoint creates order for a given customer and this is the endpoint our Go service will call. 
+OrderResource.java exposes four endpoints:
+    - `GET  /orders/`: returns queried orders using [KumuluzEE REST](https://github.com/kumuluz/kumuluzee-rest),
+    - `GET  /orders/{orderId}`: returns order for given order ID,
+    - `GET  /orders/{orderId}/customer`: returns customer (specifically, CustomerResponse object) retrieved by calling our Go service, for given order ID,
+    - `POST /orders/ `: creates a new order from given JSON request body.
 
 ```java
 @ApplicationScoped
@@ -340,13 +353,51 @@ public class OrderResource {
     
     @Inject
     private OrdersBean ordersBean;
-    
-    // get all orders from customer with given id
+
+    @Context
+    protected UriInfo uriInfo;
+
+    @Inject
+    @DiscoverService(value = "go-service", version = "1.0.0", environment = "dev")
+    private Optional<WebTarget> serviceUrl;
+
+    // get orders by query
     @GET
-    @Path("customer/{customerId}")
-    public Response getOrdersFromCustomer(@PathParam("customerId") long customerId) {
-        List<Order> orders = ordersBean.getAllOrdersFromCustomer(customerId);
+    public Response getOrders() {
+        QueryParameters query = QueryParameters.query(uriInfo.getRequestUri().getQuery()).build();
+        List<Order> orders = ordersBean.getOrders(query);
         return Response.status(Response.Status.OK).entity(orders).build();
+    }
+
+    // get order for given id
+    @GET
+    @Path("{orderId}")
+    public Response getOrder(@PathParam("orderId") long orderId) {
+        Order order = ordersBean.getOrderById(orderId);
+        return Response.status(Response.Status.OK).entity(order).build();
+    }
+
+    // get customer for given order id
+    @GET
+    @Path("{orderId}/customer")
+    public Response getCustomerFromOrder(@PathParam("orderId") long orderId) {
+        Order order = ordersBean.getOrderById(orderId);
+
+        if (!serviceUrl.isPresent()) {
+            throw new JavaServiceException("Service URL not found!", 404);
+        }
+
+        WebTarget apiUrl = serviceUrl.get().path("v1/customers/" + order.getCustomerId());
+
+        Response response = apiUrl.request().get();
+
+        if (response.getStatus() == 200) {
+            CustomerResponse customerResponse = response.readEntity(CustomerResponse.class);
+            return Response.status(Response.Status.OK).entity(customerResponse).build();
+        } else {
+            throw new JavaServiceException("Service returned error status code: " + response.getStatus(), 500);
+        }
+
     }
     
     // create new order
@@ -355,7 +406,7 @@ public class OrderResource {
         Order order = new Order();
         order.setCustomerId(newOrder.getCustomerId());
         order.setTitle(newOrder.getTitle());
-        order.setDescription(newOrder.getTitle());
+        order.setDescription(newOrder.getDescription());
         
         ordersBean.createOrder(order);
         
@@ -364,58 +415,9 @@ public class OrderResource {
 }
 ```
 
-#### CustomerResource
-
-CustomerResource has only one endpoint, which gets order id and fetches information of customer that made the order. This information is retrieved from our Go service, which is discovered and stored in serviceUrl.
-
-```java
-@ApplicationScoped
-@Path("customers")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
-public class CustomerResource {
-    
-    @Inject
-    private OrdersBean ordersBean;
-    
-    // discovering service
-    @Inject
-    @DiscoverService(value = "go-service", version = "1.0.0", environment = "dev")
-    private Optional<WebTarget> serviceUrl;
-    
-    // get customer for given order id
-    @GET
-    @Path("{orderId}")
-    public Response getCustomerFromOrder(@PathParam("orderId") long orderId) {
-        Order order = ordersBean.getOrderById(orderId);
-        
-        if (!serviceUrl.isPresent()) {
-            throw new JavaServiceException("Service URL not found!", 404);
-        }
-        
-        // build api url from service url
-        WebTarget apiUrl = serviceUrl.get().path("v1/customers/" + order.getCustomerId());
-        
-        // perform GET request
-        Response response = apiUrl.request().get();
-        
-        if (response.getStatus() == 200) {
-            // read received entity and cast it into CustomerResponse
-            CustomerResponse customerResponse = response.readEntity(CustomerResponse.class);
-            return Response.status(Response.Status.OK).entity(customerResponse).build();
-        } else {
-            // if Go service returns any other status code than 200, 
-            // our Java service will throw Internal Server Error 500
-            throw new JavaServiceException("Service returned error status code: " + response.getStatus(), 500);
-        }
-        
-    }
-}
-```
-
 ## Create Go project
 
-Now we will create our Go service. It will be built using Gin web framework (github.com/gin-gonic/gin) and Sling HTTP client library (github.com/dghubble/sling). 
+Now we will create our Go service. It will be built using [Gin web framework](github.com/gin-gonic/gin) and [Sling HTTP client library](github.com/dghubble/sling). 
 
 If you have your own preferred packages for web framework and HTTP client, you can of course use them.
 
@@ -453,29 +455,29 @@ First, in **models.go** file, we prepare the structs for Customer and Order requ
 
 ```go
 type Customer struct {
-	ID       int64  `json:"id"`
-	Name     string `json:"name"`
-	LastName string `json:"lastName"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
+    ID       int64  `json:"id"`
+    Name     string `json:"name"`
+    LastName string `json:"lastName"`
+    Email    string `json:"email"`
+    Phone    string `json:"phone"`
 }
 
 type OrderRequest struct {
-	CustomerID  int64  `json:"customerId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+    CustomerID  int64  `json:"customerId"`
+    Title       string `json:"title"`
+    Description string `json:"description"`
 }
 
 type OrderResponse struct {
-	ID          int64  `json:"id"`
-	CustomerID  int64  `json:"customerId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+    ID          int64  `json:"id"`
+    CustomerID  int64  `json:"customerId"`
+    Title       string `json:"title"`
+    Description string `json:"description"`
 }
 
 type ErrorResponse struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
+    Status  int    `json:"status"`
+    Message string `json:"message"`
 }
 ```
 
@@ -487,7 +489,7 @@ Let's prepare the main function in our **main.go** file. The main function will:
 1. initialize a mocked database (an array of Customer stucts),
 2. initialize KumuluzEE config,
 3. initialize KumuluzEE discovery and register itself to consul,
-3. initialize and start REST API server.
+4. initialize and start REST API server.
 
 ```go
 
@@ -519,14 +521,22 @@ func main() {
         }
     })
 
-    // routes
+    // prepare routes and map them to handlers
     v1c := router.Group("/v1/customers")
     {
+        // GET /v1/customers/
         v1c.GET("/", getCustomers)
+        // GET /v1/customers/:id
         v1c.GET("/:id", getCustomerByID)
-        v1c.GET("/:id/order")
+        // GET /v1/customers/:id/orders/
+        v1c.GET("/:id/orders", getOrdersByCustomerID)
+        // POST /v1/customers/
+        v1c.POST("/", createCustomer)
+        // GET /v1/customers/:id/neworder
+        v1c.GET("/:id/neworder", createOrder)
     }
 
+    // run REST API server
     router.Run(":9000")
 }
 ```
@@ -584,15 +594,15 @@ We also prepare the initialization function for our database. For the sake of th
 
 ```go
 func initDB() {
-	mockDB = make([]Customer, 0)
-	mockDB = append(mockDB,
-		Customer{100, "John", "Carlile", "john.ca@mail.com", "053347863"},
-		Customer{101, "Ann", "Lockwood", "lockwood_ann@mail.com", "023773123"},
-		Customer{102, "Elizabeth", "Mathews", "eli23@mail.com", "043343403"},
-		Customer{103, "Isaac", "Anderson", "isaac.anderson@mail.com", "018743831"},
-		Customer{104, "Barret", "Peyton", "barretp@mail.com", "063343148"},
-		Customer{105, "Terry", "Cokes", "terry_cokes@mail.com", "053339123"},
-	)
+    mockDB = make([]Customer, 0)
+    mockDB = append(mockDB,
+        Customer{100, "John", "Carlile", "john.ca@mail.com", "053347863"},
+        Customer{101, "Ann", "Lockwood", "lockwood_ann@mail.com", "023773123"},
+        Customer{102, "Elizabeth", "Mathews", "eli23@mail.com", "043343403"},
+        Customer{103, "Isaac", "Anderson", "isaac.anderson@mail.com", "018743831"},
+        Customer{104, "Barret", "Peyton", "barretp@mail.com", "063343148"},
+        Customer{105, "Terry", "Cokes", "terry_cokes@mail.com", "053339123"},
+    )
 }
 ```
 
@@ -634,7 +644,66 @@ func getCustomerByID(c *gin.Context) {
     return
 }
 
-// this endpoint generates new Order Request and calls our Java service to create it
+// this endpoint calls our Java service to reterieve all orders for a given customer ID
+func getOrdersByCustomerID(c *gin.Context) {
+
+    // discover Java service...
+    ordAddress, err := disc.DiscoverService(discovery.DiscoverOptions{
+        Value:       "java-service",
+        Environment: "dev",
+        Version:     "1.0.0",
+        AccessType:  "direct",
+    })
+
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, ErrorResponse{
+            Status:  http.StatusInternalServerError,
+            Message: err.Error(),
+        })
+        return
+    }
+
+    cID := c.Param("id")
+    orders := new([]OrderResponse)
+
+    _, err = sling.New().Get(ordAddress).Path("/v1/orders?where=customerId:EQ:" + cID).ReceiveSuccess(orders)
+    if err != nil {
+        // Java service returned something other than code 2xx
+        c.JSON(http.StatusInternalServerError, ErrorResponse{
+            Status:  http.StatusInternalServerError,
+            Message: err.Error(),
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, orders)
+    return
+}
+
+// creates a new customer from POST body
+func createCustomer(c *gin.Context) {
+    var customer Customer
+
+    err := c.ShouldBindJSON(&customer)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, ErrorResponse{
+            http.StatusBadRequest,
+            fmt.Sprintf("Could not create customer from JSON."),
+        })
+    }
+
+    // give it an ID
+    customer.ID = mockDB[len(mockDB)-1].ID + 1
+
+    // add it to "database"
+    mockDB = append(mockDB, customer)
+
+    c.JSON(http.StatusCreated, customer)
+    return
+}
+
+// this endpoint is an example of POSTing json data to our Java service
+// it generates new Order Request and calls our Java service to create it
 // Returns order with 201 CREATED code if successful.
 func createOrder(c *gin.Context) {
     // prepare a new order
@@ -642,9 +711,9 @@ func createOrder(c *gin.Context) {
     id, err := strconv.ParseInt(sid, 0, 0)
     if err != nil {
         c.JSON(http.StatusBadRequest, ErrorResponse{
-        http.StatusBadRequest,
-        fmt.Sprintf("ID conversion to integer failed with error: %s", err.Error()),
-    })
+            http.StatusBadRequest,
+            fmt.Sprintf("ID conversion to integer failed with error: %s", err.Error()),
+        })
         return
     }
 
@@ -655,7 +724,7 @@ func createOrder(c *gin.Context) {
     }
 
     // discover Java service to post order to
-    service, err := disc.DiscoverService(discovery.DiscoverOptions{
+    ordAddress, err := disc.DiscoverService(discovery.DiscoverOptions{
         Value:       "java-service",
         Environment: "dev",
         Version:     "1.0.0",
@@ -672,13 +741,12 @@ func createOrder(c *gin.Context) {
 
     // pointer to OrderResponse, where request's response will be stored
     ordResp := &OrderResponse{}
-    // build api url
-    ordAddress := fmt.Sprintf("http://%s:%s/v1/orders", service.Address, service.Port)
 
     // perform POST request
-    _, err = sling.New().Post(ordAddress).BodyJSON(ord).ReceiveSuccess(ordResp)
+    fmt.Println(ordAddress)
+    _, err = sling.New().Post(ordAddress).Path("/v1/orders").BodyJSON(ord).ReceiveSuccess(ordResp)
     if err != nil {
-    // Java service returned something other than code 2xx
+        // Java service returned something other than code 2xx
         c.JSON(http.StatusInternalServerError, ErrorResponse{
             Status:  http.StatusInternalServerError,
             Message: err.Error(),
@@ -707,12 +775,14 @@ $ ./go-service
 
 And access their endpoints:
 - Java service:
-    - http://localhost:8080/v1/customers/{orderId}
-    - http://localhost:8080/v1/orders/customer/{customerId}
+    - http://localhost:8080/v1/orders/ (since we used KumuluzEE REST, we can perform various queries, for example localhost:8080/v1/orders?where=customerId:EQ:102)
+    - http://localhost:8080/v1/orders/1
+    - http://localhost:8080/v1/orders/1/customer
 - Go service:
     - http://localhost:9000/v1/customers/
-    - http://localhost:9000/v1/customers/{customerId}/order
-    - http://localhost:9000/v1/customers/{customerId}
+    - http://localhost:9000/v1/customers/102
+    - http://localhost:9000/v1/customers/102/orders
+    - http://localhost:9000/v1/customers/102/neworder
 
 ## Conclusion
 
