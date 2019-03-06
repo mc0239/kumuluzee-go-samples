@@ -339,10 +339,10 @@ public class OrderApplication extends Application {}
 #### OrderResource
 
 OrderResource.java exposes four endpoints:
-    - `GET  /orders/`: returns queried orders using [KumuluzEE REST](https://github.com/kumuluz/kumuluzee-rest),
-    - `GET  /orders/{orderId}`: returns order for given order ID,
-    - `GET  /orders/{orderId}/customer`: returns customer (specifically, CustomerResponse object) retrieved by calling our Go service, for given order ID,
-    - `POST /orders/ `: creates a new order from given JSON request body.
+- `GET  /orders/`: returns queried orders using [KumuluzEE REST](https://github.com/kumuluz/kumuluzee-rest),
+- `GET  /orders/{orderId}`: returns order for given order ID,
+- `GET  /orders/{orderId}/customer`: returns customer (specifically, CustomerResponse object) retrieved by calling our Go service, for given order ID,
+- `POST /orders/ `: creates a new order from given JSON request body.
 
 ```java
 @ApplicationScoped
@@ -775,7 +775,7 @@ $ ./go-service
 
 And access their endpoints:
 - Java service:
-    - http://localhost:8080/v1/orders/ (since we used KumuluzEE REST, we can perform various queries, for example localhost:8080/v1/orders?where=customerId:EQ:102)
+    - http://localhost:8080/v1/orders/ (since we used KumuluzEE REST, we can perform various queries, for example: http://localhost:8080/v1/orders?where=customerId:EQ:102)
     - http://localhost:8080/v1/orders/1
     - http://localhost:8080/v1/orders/1/customer
 - Go service:
