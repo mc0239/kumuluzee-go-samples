@@ -267,3 +267,12 @@ Response should be:
 ```json
 {"value":"Monday","subvalue":"Object property value"}
 ```  
+
+Since we set a watch for string-property, if this configuration value changes, the response will change.
+You can change configuration value in consul through it's UI:
+![etcd browser sample](consul_config_example.png)
+
+Response should now be:
+```json
+{"value":"Wednesday","subvalue":"Object property value"}
+```
